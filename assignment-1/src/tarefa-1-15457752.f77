@@ -1,0 +1,33 @@
+      PROGRAM MAIN
+      INTEGER I, ISIZE
+      PARAMETER ( ISIZE = 100000 )
+      INTEGER*8 ISEED
+      REAL*8 RANDS, M1, M2, M3, M4, DATA(ISIZE)
+
+      ISEED = 5842124
+      MEAN = 0
+
+      DO 10 I = 1, ISIZE
+         DATA(I) = RANDS(ISEED)
+         MEAN = MEAN + DATA(I) ** I
+10    CONTINUE
+      MEAN = MEAN / ISIZE
+
+      WRITE (*,*) DATA
+      WRITE (*,'(F13.10)') MEAN
+      END
+
+      FUNCTION RANDS(ISEED)
+c     TODO: Verificar overflow
+      INTEGER*8 ISEED, ACOPR, BCOPR, CMOD
+      REAL*8 RANDS
+
+      PARAMETER ( ACOPR = 16807_8 )
+      PARAMETER ( BCOPR = 15_8 )
+      PARAMETER ( CMOD = 2147483647_8 )
+
+      ISEED = MOD(ACOPR*ISEED+BCOPR,CMOD)
+      RANDS = DBLE( ISEED ) / CMOD
+
+      RETURN
+      END
