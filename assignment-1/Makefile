@@ -1,54 +1,55 @@
 # Compiler
 FC := gfortran
 
-# Flags for strict Fortran 77 fixed-form (compile-only)
+# Fortran 77 fixed-form compile flags (compile-time only)
 FFLAGS := -x f77 -std=legacy -ffixed-form -Wall -Wextra
 
+# Linker flags (keep compile-time flags OUT of here)
 LDFLAGS :=
 
 # Directories
 BUILD_DIR := build
 SOURCE_DIR := src
 #INCLUDES_DIR := includes
-# FFLAGS += -I$(INCLUDES_DIR)
+#FFLAGS += -I$(INCLUDES_DIR)
 
-# All Fortran source files
-SOURCES := $(wildcard $(SOURCE_DIR)/*.f77)
+# Sources / objects / executables (1:1 mapping)
+SOURCES      := $(wildcard $(SOURCE_DIR)/*.f77)
+OBJECTS      := $(patsubst $(SOURCE_DIR)/%.f77,$(BUILD_DIR)/%.o,$(SOURCES))
+EXECUTABLES  := $(patsubst $(SOURCE_DIR)/%.f77,$(BUILD_DIR)/%.exe,$(SOURCES))
 
-# Detect main source
-MAIN_SOURCE := $(firstword $(wildcard $(SOURCE_DIR)/tarefa-*.f77))
-MAIN_SOURCE := $(if $(MAIN_SOURCE),$(MAIN_SOURCE),$(firstword $(SOURCES)))
+# Default program to run (first source). Override: make run PROG=name
+DEFAULT_PROG := $(basename $(notdir $(firstword $(SOURCES))))
+PROG ?= $(DEFAULT_PROG)
 
-# Executable name
-MAIN_BASE := $(notdir $(basename $(MAIN_SOURCE)))
-MAIN_EXEC := $(if $(MAIN_BASE),$(MAIN_BASE).exe,program.exe)
+.PHONY: all run clean list
 
-# Objects
-OBJECTS := $(patsubst $(SOURCE_DIR)/%.f77,$(BUILD_DIR)/%.o,$(SOURCES))
+# Build everything: one exe per source
+all: $(BUILD_DIR) $(EXECUTABLES)
 
-# Phony targets
-.PHONY: all run clean
+# Helpful listing
+list:
+	@echo "Sources:     $(SOURCES)"
+	@echo "Objects:     $(OBJECTS)"
+	@echo "Executables: $(EXECUTABLES)"
 
-# Build all
-all: $(BUILD_DIR) $(BUILD_DIR)/$(MAIN_EXEC)
+# Run a specific program
+run: $(BUILD_DIR)/$(PROG).exe
+	./$< $(ARGS)
 
-# Run the program
-run: all
-	./$(BUILD_DIR)/$(MAIN_EXEC) $(ARGS)
-
-# Clean build artifacts
+# Clean
 clean:
 	rm -rf $(BUILD_DIR)
 
-# Create build directory
+# Ensure build dir exists
 $(BUILD_DIR):
 	mkdir -p $@
 
-# Compile .f77 files to .o  (usa apenas FFLAGS)
-$(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.f77
+# Compile each .f77 to its own .o (compile-only flags here)
+$(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.f77 | $(BUILD_DIR)
 	$(FC) $(FFLAGS) -c $< -o $@
 
-# Link object files into the final executable (DONT USE -x f77/-ffixed-form HERE)
-$(BUILD_DIR)/$(MAIN_EXEC): $(OBJECTS)
-	$(FC) $(OBJECTS) $(LDFLAGS) -o $@
+# Link each .o to its own .exe (DO NOT use compile-time flags here)
+$(BUILD_DIR)/%.exe: $(BUILD_DIR)/%.o
+	$(FC) $< $(LDFLAGS) -o $@
 
