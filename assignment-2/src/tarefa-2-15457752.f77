@@ -1,0 +1,51 @@
+      PROGRAM MAIN
+      REAL RAND, STEP
+      INTEGER ISEED, NPEOP, TIME, J, IOS
+      PARAMETER ( TIME = 1000, NPEOP = 10, ISEED = 1154 )
+      REAL POSITIONS(TIME,2*NPEOP)
+      
+      IOS = 0 
+
+      DO 20 I = 2, TIME
+         J = 1
+10       POSITIONS(I,J) = POSITIONS(I-1,J) + STEP(I+J+ISEED)
+         IF ( J .NE. 2*NPEOP ) THEN
+            J = J + 1 
+            GOTO 10
+         ENDIF 
+20    CONTINUE
+      
+      OPEN(UNIT=10,FILE='POSITIONS.out',STATUS='NEW',IOSTAT=IOS)
+      
+      IF ( IOS .NE. 0 ) THEN
+      WRITE(6,'(A,I1,A,I2)') 'I/O ERROR: ',IOS,'WHEN OPENING UNIT: 10'
+      ENDIF
+     
+      WRITE(10,*) POSITIONS
+      CLOSE(10)
+      END
+
+      FUNCTION RANDS(ISEED)
+      INTEGER ISEED, ACOPR, BCOPR, CMOD
+      REAL RANDS
+
+      PARAMETER ( ACOPR = 1123 )
+      PARAMETER ( BCOPR = 123 )
+      PARAMETER ( CMOD = 10007 )
+
+      ISEED = MOD(ACOPR*ISEED+BCOPR,CMOD)
+      RANDS = FLOAT(ISEED) / CMOD
+      RETURN
+      END 
+
+      FUNCTION STEP(ISEED)
+      REAL STEP, TRIGGER
+      INTEGER ISEED
+      TRIGGER = RANDS(ISEED)
+      IF (TRIGGER .GT. 0.5) THEN
+         STEP = RANDS(INT(TRIGGER))
+      ELSE
+         STEP = -RANDS(INT(TRIGGER))
+      END IF
+      RETURN
+      END
