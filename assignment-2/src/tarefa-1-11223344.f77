@@ -1,0 +1,55 @@
+      BLOCK DATA
+      INTEGER ISEED
+      COMMON /SEEDBLK/ ISEED
+      DATA ISEED /1154/ 
+      END
+
+      PROGRAM MAIN
+      INTEGER I, ISIZE
+      PARAMETER ( ISIZE = 100000000 )
+      DOUBLE PRECISION RANDS, RVAL, M1, M2, M3, M4
+      DATA M1, M2, M3, M4 /4*0.0/
+
+      DO 10 I = 1, ISIZE
+         RVAL = RANDS()
+         M1 = M1 + RVAL ** 1
+         M2 = M2 + RVAL ** 2
+         M3 = M3 + RVAL ** 3
+         M4 = M4 + RVAL ** 4
+10    CONTINUE
+      M1 = M1 / ISIZE
+      M2 = M2 / ISIZE
+      M3 = M3 / ISIZE
+      M4 = M4 / ISIZE
+
+      WRITE (6,'(F7.5,A,F7.5,A,F7.5,A,F7.5)') M1,' ',M2,' ',M3,' ',M4
+      END
+
+      FUNCTION RANDS()
+      DOUBLE PRECISION RANDS
+      INTEGER ISEED
+      COMMON /SEEDBLK/ ISEED
+
+c     PARAMETROS PARA O GERADOR MINSTD (A=16807, M=2**31-1)
+      INTEGER A, M, Q, R
+      PARAMETER (A = 16807)
+      PARAMETER (M = 2147483647)
+c     PARAMETROS PARA O METODO DE SCHRANGE (PRE-CALCULADOS)
+c     Q = M / A = 127773
+c     R = M % A = 8776
+      PARAMETER (Q = 127773)
+      PARAMETER (R = 8776)
+
+      INTEGER TEST
+
+c     METODO DE SCHRANGE PARA CALCULAR '(A*ISEED)%M' SEM OVERFLOW
+      TEST = A * (MOD(ISEED, Q)) - R * (ISEED / Q)
+c     E SE O RESULTADO FOR NEGATIVO, LEVAR AO DOMINIO CORRETO.
+      IF (TEST .LT. 0) THEN
+         TEST = TEST + M
+      END IF
+
+      ISEED = TEST
+      RANDS = DBLE(ISEED) / DBLE(M)
+      RETURN
+      END

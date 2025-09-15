@@ -1,0 +1,14 @@
+# Arquivo de parâmetros do Grace para o histograma
+
+# Título do gráfico e legendas dos eixos
+title "Histogram of Random Walker Final Positions (N=1000)"
+xaxis label "Final Position (x)"
+yaxis label "Number of Walkers n(x)"
+
+# Configurações do primeiro conjunto de dados (s0)
+s0 type bar
+s0 color "steelblue"
+s0 fill pattern 1
+s0 symbol 0
+s0 barwidth 2.0
+

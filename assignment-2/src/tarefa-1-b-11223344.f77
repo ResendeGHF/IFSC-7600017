@@ -1,0 +1,38 @@
+      BLOCK DATA
+      INTEGER ISEED
+      COMMON /SEEDBLK/ ISEED
+      DATA ISEED /1154/
+      END
+
+      PROGRAM MAIN
+      INTEGER I, ISIZE
+      PARAMETER (ISIZE=100000000)
+      DOUBLE PRECISION RANDS, RVAL, M1, M2, M3, M4
+      DATA M1, M2, M3, M4 /4*0.0/
+
+      DO 10 I = 1, ISIZE
+         RVAL = RANDS()
+         M1 = M1 + RVAL ** 1
+         M2 = M2 + RVAL ** 2
+         M3 = M3 + RVAL ** 3
+         M4 = M4 + RVAL ** 4
+10    CONTINUE
+      M1 = M1 / ISIZE
+      M2 = M2 / ISIZE
+      M3 = M3 / ISIZE
+      M4 = M4 / ISIZE
+
+      WRITE (6,'(F7.5,A,F7.5,A,F7.5,A,F7.5)') M1,' ',M2,' ',M3,' ',M4
+      END
+
+      FUNCTION RANDS()
+      DOUBLE PRECISION RANDS, CMOD
+      INTEGER ISEED, ACOPR, BCOPR
+      COMMON /SEEDBLK/ ISEED
+      PARAMETER (ACOPR=1103515245,BCOPR=12345,CMOD=2147483648.0)
+      INTEGER M
+      PARAMETER (M=2147483647)
+      ISEED = MOD(ACOPR*ISEED+BCOPR,M)
+      RANDS = DBLE(ISEED) / CMOD
+      RETURN
+      END

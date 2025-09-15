@@ -1,17 +1,21 @@
+      BLOCK DATA
+      INTEGER ISEED
+      COMMON /LCGBLK/ ISEED
+      DATA ISEED /1154/
+      END
+
       PROGRAM MAIN
       INTEGER I, ISIZE
-      PARAMETER ( ISIZE = 10000 )
-      INTEGER ISEED
-      REAL RANDS, M1, M2, M3, M4, DATA(ISIZE)
-
-      ISEED = 1154
+      PARAMETER (ISIZE=10000)
+      REAL RANDS, RVAL, M1, M2, M3, M4
+      DATA M1, M2, M3, M4 /4*0.0/
 
       DO 10 I = 1, ISIZE
-         DATA(I) = RANDS(ISEED)
-         M1 = M1 + DATA(I) ** 1
-         M2 = M2 + DATA(I) ** 2
-         M3 = M3 + DATA(I) ** 3
-         M4 = M4 + DATA(I) ** 4
+         RVAL = RANDS()
+         M1 = M1 + RVAL ** 1
+         M2 = M2 + RVAL ** 2
+         M3 = M3 + RVAL ** 3
+         M4 = M4 + RVAL ** 4
 10    CONTINUE
       M1 = M1 / ISIZE
       M2 = M2 / ISIZE
@@ -21,9 +25,9 @@
       WRITE (6,'(F7.5,A,F7.5,A,F7.5,A,F7.5)') M1,' ',M2,' ',M3,' ',M4
       END
 
-      FUNCTION RANDS(ISEED)
-c     TODO: Verificar overflow
+      FUNCTION RANDS()
       INTEGER ISEED, ACOPR, BCOPR, CMOD
+      COMMON /LCGBLK/ ISEED
       REAL RANDS
 
       PARAMETER ( ACOPR = 16807 )
@@ -34,3 +38,4 @@ c     TODO: Verificar overflow
       RANDS = FLOAT(ISEED) / CMOD
       RETURN
       END
+

@@ -2,7 +2,7 @@
 FC := gfortran
 
 # Fortran 77 fixed-form compile flags (compile-time only)
-FFLAGS := -x f77 -std=legacy --pedantic -ffixed-form -fno-automatic -fno-implicit-none #-Wall -Wextra
+FFLAGS := -x f77 -std=legacy --pedantic -ffixed-form -fno-automatic -fno-implicit-none -Wall -Wextra
 
 # Linker flags (keep compile-time flags OUT of here)
 LDFLAGS :=
