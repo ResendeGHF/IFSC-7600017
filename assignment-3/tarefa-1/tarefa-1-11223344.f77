@@ -1,0 +1,70 @@
+      PROGRAM MAIN
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      PARAMETER(X=0.5D0,H=5D0)
+      DOUBLE PRECISION RESULTS(7,12)
+
+10    FORMAT(F15.12,'',F15.12,'',F15.12,'',F15.12,'',F15.12,'',F16.12
+     + ,'',F16.12)
+
+      DO I=1, 12
+        RESULTS(1,I) = (H*10D0**(-I))
+        CALL DEL2N(X,(H*10D0**(-I)),FP)
+        RESULTS(2,I) = FP
+        CALL DEL2P(X,(H*10D0**(-I)),FP)
+        RESULTS(3,I) = FP
+        CALL DEL3S(X,(H*10D0**(-I)),FP)
+        RESULTS(4,I) = FP
+        CALL DEL5S(X,(H*10D0**(-I)),FP)
+        RESULTS(5,I) = FP
+        CALL DEL3S2(X,(H*10D0**(-I)),FP)
+        RESULTS(6,I) = FP
+        CALL DEL5S2(X,(H*10D0**(-I)),FP)
+        RESULTS(7,I) = FP
+      END DO
+
+      WRITE(6,10) RESULTS
+
+      END PROGRAM
+
+      DOUBLE PRECISION FUNCTION F(X)
+      DOUBLE PRECISION X
+      F = DEXP(2D0*X**2D0)*DTANH(2D0*X)
+      RETURN
+      END FUNCTION
+
+      SUBROUTINE DEL2N(X,H,FP)
+      DOUBLE PRECISION FP, F, X, H
+      FP = (F(X+H)-F(X))/H
+      RETURN
+      END SUBROUTINE
+
+      SUBROUTINE DEL2P(X,H,FP)
+      DOUBLE PRECISION FP, F, X, H
+      FP = (F(X)-F(X-H))/H
+      RETURN
+      END SUBROUTINE
+
+      SUBROUTINE DEL3S(X,H,FP)
+      DOUBLE PRECISION FP, F, X, H
+      FP = (F(X+H)-F(X-H))/(2D0*H)
+      RETURN
+      END SUBROUTINE
+
+      SUBROUTINE DEL5S(X,H,FP)
+      DOUBLE PRECISION FP, F, X, H
+      FP = (F(X-2D0*H)-8D0*F(X-H)+8D0*F(X+H)-F(X+2D0*H))/(12D0*H)
+      RETURN
+      END SUBROUTINE
+
+      SUBROUTINE DEL3S2(X,H,FP)
+      DOUBLE PRECISION FP, F, X, H
+      FP = (F(X+H)-2*F(X)+F(X-H))/(H**2D0)
+      RETURN
+      END SUBROUTINE
+
+      SUBROUTINE DEL5S2(X,H,FP)
+      DOUBLE PRECISION FP, F, X, H
+      FP =(-F(X-2D0*H)+16D0*F(X-H)-30D0*F(x)+16D0*F(X+H)-F(X+2D0*H))
+     + /(12D0*(H**2D0))
+      RETURN
+      END SUBROUTINE
