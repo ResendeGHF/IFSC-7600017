@@ -1,0 +1,144 @@
+      PROGRAM MAIN
+
+C     ARRAY DE FORCAS E VARIAVEIS DE LOOP
+      REAL FORCES_F0(2), THETA_INIT(2), OMEGA_INIT(2)
+      REAL OUTS_T(1000), OUTS_1(1000), OUTS_2(1000)
+      DATA FORCES_F0 / 0.5, 1.2 /
+      DATA THETA_INIT / 1.0, 1.001 /
+      DATA OMEGA_INIT / 0.0, 0.0 /
+      CHARACTER*60 FILENAME
+      IFORCES = 2
+      INITC = 2
+
+C     PARAMETROS
+      G = 9.8
+      ALENGHT = 9.8
+      M = 1.0
+      DT = 0.04
+      TMAX = 25.0
+      PI = ACOS(-1.0)
+      W_FREQ_SQ = G / ALENGHT
+      E_FACTOR = 0.5 * M * ALENGHT**2
+      VGAMMA = 0.05
+      EXT_OMEGA = 1.0
+
+C     FORMATOS UTILIZADOS PARA ARQUIVOS DE SAIDA E CABECALHO
+45    FORMAT(F15.10,',',F15.10,',',F15.10,',',F15.10)
+55    FORMAT('Tempo(s)',',','Posição Ângular (rad)',','
+     + ,'Velocidade Ângular (rad/s)',',','Energia (j)')
+65    FORMAT(A, F5.3, A, F5.3, A)
+75    FORMAT(F15.10,F15.10)
+85    FORMAT(A, F5.3, A)
+95    FORMAT(F15.10,',',F15.10)
+
+      DO J = 1, INITC
+
+C     CONDICOES INICIAIS (CONSTANTES)
+      THETA_0 = THETA_INIT(J)
+      OMEGA_0 = OMEGA_INIT(J)
+
+      DO K = 1, IFORCES
+      EXT_FORCE = FORCES_F0(K)
+
+C     GERA NOME DE ARQUIVO DINAMICO
+      WRITE(FILENAME, 65) './data/saida-4-c-F0-', EXT_FORCE, 
+     + '-theta-', THETA_0, '-15457752.out'
+          
+      OPEN(UNIT=10, FILE=FILENAME, STATUS='UNKNOWN')
+      WRITE(10, 55)
+
+C     RESETA CONDICOES INICIAIS
+      T = 0.0
+      THETA = THETA_0
+      OMEGA = OMEGA_0
+      I = 0
+
+100   CONTINUE
+      IF ( T .GE. TMAX ) GOTO 200
+
+      ENERGY = E_FACTOR * OMEGA**2 + M * G * ALENGHT 
+     +           * (1.0 - COS(THETA))
+
+      WRITE(10,45) T, THETA, OMEGA, ENERGY
+
+          OMEGA = OMEGA - W_FREQ_SQ * SIN(THETA) * DT
+     +            - VGAMMA * OMEGA * DT
+     +            + EXT_FORCE * SIN(EXT_OMEGA*T) * DT
+          THETA = THETA + OMEGA * DT
+
+      I = I + 1
+      T = I * DT      
+
+      GOTO 100
+200   CONTINUE
+      CLOSE(10)
+
+      END DO
+      END DO
+
+      DO K = 1, IFORCES
+
+      EXT_FORCE = FORCES_F0(K)
+
+      WRITE(FILENAME, 65) './data/saida-4-c-F0-', EXT_FORCE,
+     + '-theta-', THETA_INIT(1), '-15457752.out'
+      OPEN(UNIT=10, FILE=FILENAME, STATUS='OLD', ACTION='READ')
+      WRITE(FILENAME, 65) './data/saida-4-c-F0-', EXT_FORCE,
+     + '-theta-', THETA_INIT(2), '-15457752.out'    
+      OPEN(UNIT=20, FILE=FILENAME, STATUS='OLD', ACTION='READ')
+
+      CALL IMDA(10, LINE_NUM)
+      REWIND(10)
+      CALL READ_FILE(10, LINE_NUM, OUTS_T, OUTS_1)
+
+      CALL IMDA(20, LINE_NUM)
+      REWIND(20)
+      CALL READ_FILE(20, LINE_NUM, OUTS_T, OUTS_2)
+      CLOSE(10)
+      CLOSE(20)
+
+      WRITE(FILENAME, 85) './data/saida-4-c-F0-', EXT_FORCE,
+     + '-txt-15457752.out'
+      OPEN(UNIT=30, FILE=FILENAME, STATUS='UNKNOWN', ACTION='WRITE')
+      WRITE(30,'(A,A,A)') 'Tempo (s)', ',', 'THETA 2 (rad)'
+      WRITE(30,95) (OUTS_T(I), (OUTS_2(I) - OUTS_1(I)), I=1, LINE_NUM)
+      CLOSE(30)
+
+      END DO
+
+      END
+
+      SUBROUTINE READ_FILE(IN_UNIT, LINE_NUM, OUTS_T, OUTS)
+C     PERCORRE O NUMERO DE LINHAS DE UM ARQUIVO E LE A SEGUNDA COLUNA
+      REAL OUTS(LINE_NUM), OUTS_T(LINE_NUM)
+      CHARACTER*70 DUMMY
+      READ(IN_UNIT, '(A)', IOSTAT=IO_STATUS) DUMMY
+      I = 1
+300   CONTINUE
+      IF ( I .GT. LINE_NUM ) GOTO 400
+      READ(IN_UNIT, *, IOSTAT=IO_STATUS, END=400) T, VAL, A2, A3
+      !IF (IO_STATUS .NE. 0) GOTO 400
+      OUTS(I) = VAL
+      OUTS_T(I) = T
+      I = I + 1
+      GOTO 300
+400   CONTINUE
+      END
+
+      SUBROUTINE IMDA(IN_UNIT, LINE_NUM)
+      CHARACTER*70 DUMMY
+C     FUNCAO "I MISS DYNAMIC ALLOCATION" CONTA QUANTAS LINHAS
+C     TEM UM ARQUIVO, PARA QUE SEJA POSSIVEL ALOCAR O ESPACO 
+C     NECESSARIO PARA GUARDAR TUDO NA HEAP 
+
+C     PULA O CABECALHO E COMECA A CONTAR DEPOIS DISSO     
+      READ(IN_UNIT, '(A)', IOSTAT=IO_STATUS) DUMMY
+      LINE_NUM = 1
+500   CONTINUE
+      READ(IN_UNIT, '(A)', IOSTAT=IO_STATUS, END=600) DUMMY
+      IF (IO_STATUS .NE. 0) GOTO 600
+      LINE_NUM = LINE_NUM + 1
+      GOTO 500
+600   CONTINUE
+      LINE_NUM = LINE_NUM - 1
+      END

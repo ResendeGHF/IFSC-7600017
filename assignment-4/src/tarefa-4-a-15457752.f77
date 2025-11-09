@@ -14,10 +14,11 @@ C     CONDICOES INICIAIS
       THETA_0 = 0.0
       OMEGA_0 = SQRT(G/ALENGHT)
 
-45    FORMAT(F15.10,F15.10,F15.10,F15.10)
+45    FORMAT(F15.10,',',F15.10,',',F15.10,',',F15.10)
 55    FORMAT(A,',',A,',',A,',',A)
 
-      OPEN(UNIT=10,FILE='saida-4-a-15457752.out',STATUS='UNKNOWN')
+      OPEN(UNIT=10,FILE='./data/saida-4-a-15457752.out',
+     + STATUS='UNKNOWN')
       WRITE(10,55) 'Tempo(s)','Posição Ângular (rad)'
      + ,'Velocidade Ângular (rad/s)','Energia (j)'
 
