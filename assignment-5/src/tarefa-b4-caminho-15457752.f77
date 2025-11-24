@@ -23,22 +23,30 @@ C     MASSAS: SOL, MERCURIO, VENUS, TERRA, MARTE, JUPITER, SATURNO, URANO, NETUN
       DOUBLE PRECISION TIME(10000)
       DOUBLE PRECISION MASS(50)
       DOUBLE PRECISION RADIUS(10)
-      DOUBLE PRECISION PERIOD(10)
-      DOUBLE PRECISION KEPLER(10)
+      DOUBLE PRECISION REL_POS(50,10000,2)
+      CHARACTER*60 FNAME(10)
+      CHARACTER*30 BODY_NAME(10)
       INTEGER PLANET_IDX
-      CHARACTER*60 FNAME
       COMMON /ARRAYS/ BODY, VEL, MASS, NBODY
       COMMON /PARAMS/ MAXBODY, MAXSTEP
 
-      FNAME = "saida-a1-15457752.out"
+C     NOMES DOS CORPOS PARA ARQUIVOS DE SAIDA
+      BODY_NAME(1) = "sol"
+      BODY_NAME(2) = "mercurio"
+      BODY_NAME(3) = "venus"
+      BODY_NAME(4) = "terra"
+      BODY_NAME(5) = "marte"
+      BODY_NAME(6) = "jupiter"
+      BODY_NAME(7) = "saturno"
+      BODY_NAME(8) = "urano"
+      BODY_NAME(9) = "netuno"
+      BODY_NAME(10) = "plutao"
+
 45    FORMAT(201(1X,E30.20))
 
 C     UNIDADES: DISTANCIA EM UA, TEMPO EM ANOS, MASSA EM KG
-C     CONSTANTE GRAVITACIONAL: PARA ORBITA CIRCULAR A 1 UA COM PERIODO 1 ANO
-C     PRECISAMOS: G*M_SOL = 4*PI^2 UA^3/ANO^2
       DT = 1.0D-3
-      TMAX_SIM = 1.0D0
-      TMAX_PERIOD = 50.0D0
+      TMAX = 1.0D0
       PI = DACOS(-1.0D0)
       G = 4.0D0 * PI**2 / MASS(1)
 
@@ -64,11 +72,9 @@ C     INICIALIZAR SOL NA ORIGEM
       VEL(1,2,2) = 0.0D0
 
 C     INICIALIZAR PLANETAS EM SEUS RAIOS COM VELOCIDADES DE ORBITA CIRCULAR
-C     PARA ORBITA CIRCULAR: V = SQRT(G*M_SOL/R)
       DO J = 2, NBODY
       PLANET_IDX = J - 1
       R = RADIUS(PLANET_IDX)
-C     VELOCIDADE DE ORBITA CIRCULAR: V = SQRT(G*M_SOL/R) = SQRT(4*PI^2/R)
       VCIRC = DSQRT(4.0D0 * PI**2 / R)
       BODY(J,1,1) = R
       BODY(J,1,2) = 0.0D0
@@ -86,7 +92,7 @@ C     VELOCIDADE DE ORBITA CIRCULAR: V = SQRT(G*M_SOL/R) = SQRT(4*PI^2/R)
       I = 3
 100   CONTINUE
       TIME(I) = DT * ( I - 1 )
-      IF ( TIME(I) .GE. TMAX_SIM ) GOTO 200
+      IF ( TIME(I) .GE. TMAX ) GOTO 200
       DO J = 1, NBODY
       CALL RAC(J,(I-1),AX,AY)
       BODY(J,I,1) = 2.0D0*BODY(J,(I-1),1) - BODY(J,(I-2),1) 
@@ -104,84 +110,47 @@ C     VELOCIDADE DE ORBITA CIRCULAR: V = SQRT(G*M_SOL/R) = SQRT(4*PI^2/R)
 200   CONTINUE
       NSTEPS = I - 1
 
-C     CALCULAR PERIODOS ORBITAIS E RAZAO T^2/R^3 DA TERCEIRA LEI DE KEPLER
-C     PRECISAMOS SIMULAR POR MAIS TEMPO PARA CALCULAR PERIODOS
-C     MAS SALVAMOS APENAS 1 ANO DE DADOS
-      DO J = 2, NBODY
-      PLANET_IDX = J - 1
-      R0 = RADIUS(PLANET_IDX)
-      PERIOD(J) = 0.0D0
-      Y_PREV = BODY(J,1,2)
-      DO I = 2, NSTEPS
-      X = BODY(J,I,1)
-      Y = BODY(J,I,2)
-C     DETECTAR CRUZAMENTO DO EIXO X POSITIVO (Y MUDA DE NEGATIVO PARA POSITIVO)
-      IF ( Y_PREV .LT. 0.0D0 .AND. Y .GE. 0.0D0 .AND. X .GT. 0.0D0 ) 
-     +    THEN
-      PERIOD(J) = TIME(I)
-      GOTO 300
-      END IF
-      Y_PREV = Y
-      END DO
-C     SE PERIODO NAO FOR ENCONTRADO EM 1 ANO, CONTINUAR SIMULACAO
-      IF ( PERIOD(J) .LE. 0.0D0 ) THEN
-      T_CURRENT = TIME(NSTEPS)
-      I_CONT = NSTEPS + 1
-      DO WHILE ( T_CURRENT .LT. TMAX_PERIOD .AND. 
-     +           PERIOD(J) .LE. 0.0D0 )
-      T_CURRENT = DT * ( I_CONT - 1 )
-      IF ( T_CURRENT .GE. TMAX_PERIOD ) GOTO 300
-      DO K = 1, NBODY
-      CALL RAC(K,(I_CONT-1),AX,AY)
-      BODY(K,I_CONT,1) = 2.0D0*BODY(K,(I_CONT-1),1) - 
-     +                   BODY(K,(I_CONT-2),1) + AX*DT**2
-      BODY(K,I_CONT,2) = 2.0D0*BODY(K,(I_CONT-1),2) - 
-     +                   BODY(K,(I_CONT-2),2) + AY*DT**2
-      END DO
-      X = BODY(J,I_CONT,1)
-      Y = BODY(J,I_CONT,2)
-      IF ( Y_PREV .LT. 0.0D0 .AND. Y .GE. 0.0D0 .AND. X .GT. 0.0D0 ) 
-     +    THEN
-      PERIOD(J) = T_CURRENT
-      GOTO 300
-      END IF
-      Y_PREV = Y
-      I_CONT = I_CONT + 1
-      IF ( I_CONT .GT. MAXSTEP ) GOTO 300
-      END DO
-      END IF
-300   CONTINUE
-C     SE PERIODO NAO FOR ENCONTRADO, USAR VALOR TEORICO: T = 2*PI*SQRT(R^3/(G*M))
-C     COM G*M = 4*PI^2, OBTEMOS T = SQRT(R^3)
-      IF ( PERIOD(J) .LE. 0.0D0 ) THEN
-      PERIOD(J) = DSQRT(R0**3)
-      END IF
-      KEPLER(J) = PERIOD(J)**2 / (R0**3)
-      END DO
-
-C     SAIDA DOS RESULTADOS
-      OPEN(UNIT=10,FILE=FNAME,STATUS="UNKNOWN")
+C     CALCULAR POSICOES RELATIVAS DA PERSPECTIVA DA TERRA
+C     TERRA E O CORPO 4 (INDICE 4)
+      EARTH_IDX = 4
       DO I = 1, NSTEPS
-      WRITE(10,45) TIME(I), (BODY(J,I,1), BODY(J,I,2), 
-     *             VEL(J,I,1), VEL(J,I,2), J=1,NBODY)
+      X_EARTH = BODY(EARTH_IDX,I,1)
+      Y_EARTH = BODY(EARTH_IDX,I,2)
+      DO J = 1, NBODY
+      REL_POS(J,I,1) = BODY(J,I,1) - X_EARTH
+      REL_POS(J,I,2) = BODY(J,I,2) - Y_EARTH
       END DO
-      CLOSE(10)
+      END DO
 
-C     TABELA DA TERCEIRA LEI DE KEPLER
-      OPEN(UNIT=11,FILE="kepler-a1-15457752.out",STATUS="UNKNOWN")
-      WRITE(11,*) "Planeta      Raio(UA)  Periodo(Anos)  T^2/R^3"
-      WRITE(11,*) "--------------------------------------------------"
-      WRITE(11,51) "Mercurio", RADIUS(1), PERIOD(2), KEPLER(2)
-      WRITE(11,51) "Venus", RADIUS(2), PERIOD(3), KEPLER(3)
-      WRITE(11,51) "Terra", RADIUS(3), PERIOD(4), KEPLER(4)
-      WRITE(11,51) "Marte", RADIUS(4), PERIOD(5), KEPLER(5)
-      WRITE(11,51) "Jupiter", RADIUS(5), PERIOD(6), KEPLER(6)
-      WRITE(11,51) "Saturno", RADIUS(6), PERIOD(7), KEPLER(7)
-      WRITE(11,51) "Urano", RADIUS(7), PERIOD(8), KEPLER(8)
-      WRITE(11,51) "Netuno", RADIUS(8), PERIOD(9), KEPLER(9)
-      WRITE(11,51) "Plutao", RADIUS(9), PERIOD(10), KEPLER(10)
-51    FORMAT(A10,3X,F10.2,5X,F10.4,5X,E15.8)
-      CLOSE(11)
+C     SAIDA DAS POSICOES RELATIVAS PARA CADA CORPO
+      DO J = 1, NBODY
+      IF ( J .EQ. 1 ) THEN
+      FNAME(J) = "saida-b4-sol-15457752.out"
+      ELSE IF ( J .EQ. 2 ) THEN
+      FNAME(J) = "saida-b4-mercurio-15457752.out"
+      ELSE IF ( J .EQ. 3 ) THEN
+      FNAME(J) = "saida-b4-venus-15457752.out"
+      ELSE IF ( J .EQ. 4 ) THEN
+      FNAME(J) = "saida-b4-terra-15457752.out"
+      ELSE IF ( J .EQ. 5 ) THEN
+      FNAME(J) = "saida-b4-marte-15457752.out"
+      ELSE IF ( J .EQ. 6 ) THEN
+      FNAME(J) = "saida-b4-jupiter-15457752.out"
+      ELSE IF ( J .EQ. 7 ) THEN
+      FNAME(J) = "saida-b4-saturno-15457752.out"
+      ELSE IF ( J .EQ. 8 ) THEN
+      FNAME(J) = "saida-b4-urano-15457752.out"
+      ELSE IF ( J .EQ. 9 ) THEN
+      FNAME(J) = "saida-b4-netuno-15457752.out"
+      ELSE
+      FNAME(J) = "saida-b4-plutao-15457752.out"
+      END IF
+      OPEN(UNIT=10+J,FILE=FNAME(J),STATUS="UNKNOWN")
+      DO I = 1, NSTEPS
+      WRITE(10+J,45) TIME(I), REL_POS(J,I,1), REL_POS(J,I,2)
+      END DO
+      CLOSE(10+J)
+      END DO
 
       END
 
